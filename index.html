@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sha Tin 15-Minute City Explorer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+body { font-family: 'Inter', system_ui, sans-serif; }
+#map { height: 100%; width: 100%; }
+.leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+.result-item { opacity: 0; transform: translateY(20px); animation: rollDown 0.4s forwards; }
+@keyframes rollDown { to { opacity: 1; transform: translateY(0); } }
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 20px; }
+#panel { transition: height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); }
+.drag-handle { transition: background-color 0.2s ease; }
+.drag-handle:active { background-color: #e5e7eb; }
+</style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col h-screen overflow-hidden">
+
+<!-- Panel -->
+<div id="panel" class="bg-white dark:bg-gray-800 shadow-xl flex flex-col border-b border-gray-200 dark:border-gray-700 overflow-hidden" style="height: 58vh;">
+    <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-emerald-600 text-white">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-white text-emerald-600 rounded-2xl flex items-center justify-center text-2xl">🏙️</div>
+            <div>
+                <h1 class="text-2xl font-semibold tracking-tight">Sha Tin 15-Minute City</h1>
+                <p class="text-emerald-100 text-sm">Find anything within 15 minutes walk</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6 space-y-6 flex-1 overflow-auto">
+        <!-- Buttons -->
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="locateUser()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+                📍 Use GPS (Once)
+            </button>
+            <button onclick="enablePinMode()" id="pin-btn" class="bg-white dark:bg-gray-700 border-2 border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-gray-600 font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+                📌 Pin on Map
+            </button>
+        </div>
+
+        <!-- Nearest Now -->
+        <button onclick="findNearestNow()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-5 px-6 rounded-3xl flex items-center justify-center gap-3 text-lg shadow-lg active:scale-95 transition-all">
+            ⭐ Nearest Now
+        </button>
+
+        <button onclick="toggleLiveWalking()" id="live-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+            🚶 Start Live Walking Mode
+        </button>
+
+        <!-- Categories -->
+        <div>
+            <label class="block text-sm font-medium text-gray-500 mb-2">What are you looking for?</label>
+            <div class="grid grid-cols-5 gap-3">
+                <button onclick="setFeatureType('clinic')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                    <span class="text-3xl">🏥</span><span class="text-xs font-medium mt-1">Clinic</span>
+                </button>
+                <button onclick="setFeatureType('pharmacy')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                    <span class="text-3xl">💊</span><span class="text-xs font-medium mt-1">Pharmacy</span>
+                </button>
+                <button onclick="setFeatureType('hospital')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                    <span class="text-3xl">🏨</span><span class="text-xs font-medium mt-1">Hospital</span>
+                </button>
+                <button onclick="setFeatureType('market')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                    <span class="text-3xl">🛒</span><span class="text-xs font-medium mt-1">Market</span>
+                </button>
+                <button onclick="setFeatureType('park')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                    <span class="text-3xl">🌳</span><span class="text-xs font-medium mt-1">Park</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Refresh -->
+        <div class="flex justify-end">
+            <button onclick="loadPOIs()" class="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-1 hover:underline">Refresh ↻</button>
+        </div>
+
+        <!-- Location Status -->
+        <div id="location-status" class="text-sm bg-gray-50 dark:bg-gray-700 rounded-3xl p-4 hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                    <span id="current-location-text" class="font-medium text-gray-700 dark:text-gray-300"></span>
+                </div>
+                <button onclick="clearLocation()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="flex-1 flex flex-col min-h-0">
+            <div class="flex justify-between items-baseline mb-3">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Nearby Features
+                    <span id="results-count" class="text-emerald-600 text-sm font-normal"></span>
+                </h2>
+            </div>
+            <div id="results-list" class="flex-1 overflow-auto space-y-3 pr-2 custom-scroll"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Drag Handle -->
+<div onclick="toggleMap()" class="drag-handle bg-white dark:bg-gray-800 border-t border-b flex justify-center py-3 cursor-pointer">
+    <div class="w-14 h-1.5 bg-gray-400 rounded-full"></div>
+</div>
+
+<!-- Map -->
+<div id="map-container" class="flex-1 relative bg-gray-100 dark:bg-gray-900" style="height: 45vh;">
+    <div id="map"></div>
+    
+    <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block">
+        <strong>Live Mode:</strong> Walk naturally.<br>If you go wrong, the app will help reroute.
+    </div>
+    
+    <div id="offroute-alert" class="hidden absolute top-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 z-[1000]">
+        <span class="text-2xl">⚠️</span>
+        <div class="flex-1">
+            <div class="font-semibold">You're off the route!</div>
+            <div class="text-sm opacity-90">Do you want a new path from here?</div>
+        </div>
+        <button onclick="recalculateCurrentRoute()" class="bg-white text-orange-600 px-6 py-2.5 rounded-3xl font-medium hover:bg-orange-100">Recalculate</button>
+        <button onclick="dismissOffRouteAlert()" class="text-2xl leading-none hover:text-orange-200">×</button>
+    </div>
+    
+    <div id="route-summary" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 text-sm z-[1000]">
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.js"></script>
+
+<script>
+// ==================== VARIABLES ====================
+let map, userMarker = null, userLatLng = null, poiMarkers = [], currentRouteControl = null;
+let currentFeatureType = 'hospital';
+let isPinMode = false;
+let watchId = null;
+let isLiveWalking = false;
+let lastDestination = null;
+let offRouteCheckInterval = null;
+let isMapExpanded = false;
+
+// ==================== ALL POIs ====================
+let allPOIs = [
+    { id: 1, name: "Sha Tin Student Health Service Centre", type: "clinic", lat: 22.37752063, lon: 114.1841083, address: "1/F Sha Tin (Tai Wai) Clinic, 2 Man Lai Road, Tai Wai" },
+    { id: 2, name: "Yuen Chau Kok Chest Clinic", type: "clinic", lat: 22.38247667, lon: 114.2015095, address: "29 Chap Wai Kon Street, Sha Tin" },
+    { id: 3, name: "Pamela Youde Child Assessment Centre (Shatin)", type: "clinic", lat: 22.3817632, lon: 114.2018784, address: "2/F, 31-33 Chap Wai Kon Street, Sha Tin" },
+    { id: 4, name: "Pamela Youde School Dental Clinic", type: "clinic", lat: 22.3817632, lon: 114.2018784, address: "1/F, 31-33 Chap Wai Kon Street, Yuen Chau Kok" },
+    { id: 5, name: "Pamela Youde Government Dental Clinic", type: "clinic", lat: 22.38193446, lon: 114.2020435, address: "1/F, 31-33 Chap Wai Kon Street, Yuen Chau Kok" },
+    { id: 6, name: "Ma On Shan Maternal & Child Health Centre", type: "clinic", lat: 22.42507401, lon: 114.2349405, address: "1/F, Ma On Shan Health Centre, 609 Sai Sha Road" },
+    { id: 7, name: "Sha Tin (Tai Wai) Methadone Clinic", type: "clinic", lat: 22.37752063, lon: 114.1841083, address: "3 Man Lai Road, Tai Wai" },
+    { id: 8, name: "Lek Yuen Elderly Health Centre", type: "clinic", lat: 22.38377826, lon: 114.1918187, address: "3/F, Lek Yuen Health Centre, 9 Lek Yuen Street" },
+    { id: 9, name: "Lek Yuen Maternal & Child Health Centre", type: "clinic", lat: 22.38377826, lon: 114.1918187, address: "2/F, Lek Yuen Health Centre, 9 Lek Yuen Street" },
+    { id: 100, name: "YAN CHAK PHARMACY LIMITED", type: "pharmacy", lat: 22.38638416, lon: 114.2085748, address: "SHOP P10, SHEK MUN SHOPPING CENTRE, SHEK MUN ESTATE" },
+    { id: 101, name: "LUEN SHING DISPENSARY LIMITED", type: "pharmacy", lat: 22.38898496, lon: 114.2087953, address: "SHOP 46, G/F, KINGS WING PLAZA 2, SHEK MUN" },
+    { id: 102, name: "LUNG FUNG MALL O/B TAI TAK PHARMACY", type: "pharmacy", lat: 22.38260129, lon: 114.1902534, address: "SHOP NO.6-8,15,16A&B,17B&C, LEVEL 3, SHATIN CENTRE" },
+    { id: 103, name: "YIK ON PHARMACY", type: "pharmacy", lat: 22.37673786, lon: 114.1917422, address: "SHOP C, NO 7, G/F, JAT MIN CHUEN MARKET" },
+    { id: 104, name: "WATSON'S THE CHEMIST (New Town Plaza)", type: "pharmacy", lat: 22.38228218, lon: 114.1883976, address: "SHOP 451-453, LEVEL 4, NEW TOWN PLAZA PHASE 1" },
+    { id: 105, name: "WATSON'S THE CHEMIST (Science Park)", type: "pharmacy", lat: 22.4267533, lon: 114.2106739, address: "UNIT S046B, G/F, BUILDING 10W, HONG KONG SCIENCE PARK" },
+    { id: 106, name: "WATSON'S THE CHEMIST (Lucky Plaza)", type: "pharmacy", lat: 22.38318988, lon: 114.1906672, address: "SHOPS 3058, 3087 & 3088, LEVEL 3, LUCKY PLAZA" },
+    { id: 107, name: "WATSON'S THE CHEMIST (City One)", type: "pharmacy", lat: 22.38648129, lon: 114.2041272, address: "SHOP G24B, G25 AND G26, FORTUNE CITY ONE" },
+    { id: 108, name: "MORECARE PHARMACY LIMITED", type: "pharmacy", lat: 22.37958157, lon: 114.1870065, address: "SHOP 36B, LEVEL 3, HILTON PLAZA" },
+    { id: 109, name: "DAN DAN HEALTH", type: "pharmacy", lat: 22.38325121, lon: 114.1891204, address: "SHOP NO. 24, LEVEL 3, SHATIN PLAZA" },
+    { id: 110, name: "CHI MAN PHARMACY", type: "pharmacy", lat: 22.38298124, lon: 114.1888006, address: "SHOP 25E2, LEVEL 3, SHATIN PLAZA" },
+    { id: 111, name: "TACK SHING DISPENSARY", type: "pharmacy", lat: 22.38320789, lon: 114.1907715, address: "SHOP 3062, LEVEL 3, SHATIN LUCKY PLAZA" },
+    { id: 112, name: "KWOK SHING DISPENSARY", type: "pharmacy", lat: 22.38322946, lon: 114.1906512, address: "SHOP 3060, L3, SHATIN LUCKY PLAZA" },
+    { id: 113, name: "EAST OCEAN PHARMACY LTD.", type: "pharmacy", lat: 22.37387751, lon: 114.197094, address: "FLAT 103, SHUI CHUEN O PLAZA" },
+    { id: 114, name: "MATSUMOTO KIYOSHI", type: "pharmacy", lat: 22.38182341, lon: 114.1884559, address: "SHOP 250 LEVEL 2 & 359 LEVEL 3, NEW TOWN PLAZA" },
+    { id: 115, name: "CHEUNG SHING DISPENSARY", type: "pharmacy", lat: 22.37971363, lon: 114.19504, address: "FLAT 204A-205A, 2/F, WO CHE PLAZA" },
+    { id: 116, name: "J11 DISPENSARY", type: "pharmacy", lat: 22.39772062, lon: 114.1945121, address: "UNIT A1-A3, G/F, HANG WAI INDUSTRIAL BUILDING" },
+    { id: 117, name: "CUHK MEDICAL CENTRE PHARMACY", type: "pharmacy", lat: 22.41243879, lon: 114.2109602, address: "G/F, OUTPATIENT PHARMACY, 9 CHAK CHEUNG STREET" },
+    { id: 118, name: "TUNG SING PHARMACY", type: "pharmacy", lat: 22.42047875, lon: 114.2304415, address: "FLAT G104, G/F, YIU ON SHOPPING CENTRE" },
+    { id: 119, name: "MANNINGS BABY", type: "pharmacy", lat: 22.38175841, lon: 114.1884121, address: "SHOP A213, LEVEL 2, NEW TOWN PLAZA PHASE III" },
+    { id: 120, name: "WANSHUN DRUG & COSMETICS", type: "pharmacy", lat: 22.38926724, lon: 114.2088549, address: "SHOP G12, G/F, KINGS WING PLAZA 2" },
+    { id: 121, name: "MANNINGS (Fortune City One)", type: "pharmacy", lat: 22.38644791, lon: 114.2039427, address: "SHOP G30-32, FORTUNE CITY ONE" },
+    { id: 122, name: "HANG LEE DISPENSARY", type: "pharmacy", lat: 22.37888164, lon: 114.1944594, address: "SHOP 232-233, 2/F, SAND MARTIN HOUSE, SHA KOK ESTATE" },
+    { id: 123, name: "MANNINGS (New Town Plaza Phase 1)", type: "pharmacy", lat: 22.3818397, lon: 114.1881859, address: "SHOP NO.307 & 307A, LEVEL 3, NEW TOWN PLAZA PHASE 1" },
+    { id: 124, name: "SHING FUNG DISPENSARY", type: "pharmacy", lat: 22.36297251, lon: 114.1715713, address: "SHOP NO. 111, G/F, HIN KENG SHOPPING CTR." },
+    { id: 125, name: "CHEUNG SHING DISPENSARY (Hilton Plaza)", type: "pharmacy", lat: 22.37976908, lon: 114.1870069, address: "SHOP NO.35, LEVEL 3, HILTON PLAZA" },
+    { id: 126, name: "WING WAH DISPENSARY", type: "pharmacy", lat: 22.38619866, lon: 114.2039504, address: "G35-36, CITY ONE PLAZA, CITY ONE SHATIN" },
+    { id: 201, name: "Shatin Hospital", type: "hospital", lat: 22.398115, lon: 114.212263, address: "33 A Kung Kok Street, Ma On Shan" },
+    { id: 202, name: "Prince of Wales Hospital", type: "hospital", lat: 22.379939, lon: 114.20129, address: "30-32 Ngan Shing Street" },
+    { id: 203, name: "Cheshire Home, Shatin", type: "hospital", lat: 22.39918, lon: 114.21653, address: "30 A Kung Kok Shan Road" },
+    { id: 204, name: "Bradbury Hospice", type: "hospital", lat: 22.398512, lon: 114.2151, address: "17 A Kung Kok Shan Road" },
+    { id: 301, name: "TAI WAI MARKET", type: "market", lat: 22.3745043, lon: 114.1776997, address: "2-18 Chik Fai Street, Grandeur Garden, Tai Wai" },
+    { id: 302, name: "FO TAN COOKED FOOD MARKET (WEST)", type: "market", lat: 22.39803705, lon: 114.1928011, address: "Shan Mei Street, Fo Tan" },
+    { id: 303, name: "SHA TIN MARKET", type: "market", lat: 22.38403098, lon: 114.1899155, address: "20 Sha Tin Centre Street" },
+    { id: 304, name: "FO TAN COOKED FOOD MARKET (EAST)", type: "market", lat: 22.39679076, lon: 114.1935973, address: "Shan Mei Street, Fo Tan" },
+    { id: 401, name: "Ma On Shan Promenade", type: "park", lat: 22.40883274, lon: 114.2204092, address: "Ning Tai Road, Ma On Shan" },
+    { id: 402, name: "Shing Mun River Promenade Garden No.2", type: "park", lat: 22.38949747, lon: 114.2023447, address: "Tai Chung Kiu Road, Sha Tin" },
+    { id: 403, name: "Shing Mun River Promenade Garden No.1", type: "park", lat: 22.3769827, lon: 114.189885, address: "Tai Chung Kiu Road, Sha Tin" },
+    { id: 404, name: "Sha Tin Park", type: "park", lat: 22.37949163, lon: 114.1898733, address: "2 Yuen Wo Road, Shatin" },
+    { id: 405, name: "Shing Mun River Promenade Garden No.3", type: "park", lat: 22.3914707, lon: 114.199105, address: "Tai Chung Kiu Road, City One" },
+    { id: 406, name: "Ma On Shan Sai Sha Road Garden", type: "park", lat: 22.4244587, lon: 114.227343, address: "Sai Sha Road, Ma On Shan" },
+    { id: 407, name: "Mei Tin Road Sitting-out Area", type: "park", lat: 22.3771877, lon: 114.174382, address: "Mei Tin Road, Tai Wai" },
+    { id: 408, name: "On Muk Street Garden", type: "park", lat: 22.38939996, lon: 114.2051162, address: "On Muk Street, Sha Tin" },
+    { id: 409, name: "Ma On Shan Park", type: "park", lat: 22.4272941, lon: 114.2311852, address: "12 On Chun Street, Ma On Shan" }
+];
+
+// ==================== HELPERS ====================
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function calculateWalkingTime(distanceKm) {
+    return Math.round((distanceKm / 4.8) * 60);
+}
+
+// ==================== NEAREST NOW ====================
+function findNearestNow() {
+    if (!userLatLng) return alert("Please set your location first using GPS or Pin mode!");
+    let filtered = allPOIs.filter(p => p.type === currentFeatureType);
+    if (!filtered.length) return alert("No " + currentFeatureType + " found");
+    
+    let closest = filtered.reduce((a, b) => {
+        const da = haversineDistance(userLatLng.lat, userLatLng.lng, a.lat, a.lon);
+        const db = haversineDistance(userLatLng.lat, userLatLng.lng, b.lat, b.lon);
+        return da < db ? a : b;
+    });
+    showRouteToPOI(closest.lat, closest.lon, closest.name);
+}
+
+// ==================== MAP INIT ====================
+function initMap() {
+    map = L.map('map').setView([22.387, 114.195], 14.8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+}
+
+// ==================== LOCATION & PIN ====================
+function locateUser() {
+    if (!navigator.geolocation) return alert("Geolocation not supported");
+    const statusEl = document.getElementById('location-status');
+    statusEl.classList.remove('hidden');
+    document.getElementById('current-location-text').innerHTML = 'Getting GPS location...';
+    
+    navigator.geolocation.getCurrentPosition(pos => {
+        userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+        if (userMarker) userMarker.remove();
+        userMarker = L.marker(userLatLng, {
+            icon: L.divIcon({
+                html: `<div style="background:#10b981;width:32px;height:32px;border-radius:9999px;border:5px solid white;box-shadow:0 0 0 5px #10b981;color:white;font-size:20px;display:flex;align-items:center;justify-content:center;">👤</div>`,
+                iconSize: [32, 32]
+            })
+        }).addTo(map).bindPopup("You are here").openPopup();
+        
+        map.flyTo(userLatLng, 16);
+        document.getElementById('current-location-text').innerHTML = `📍 Your GPS location<br><span class="text-xs">${userLatLng.lat.toFixed(4)}, ${userLatLng.lng.toFixed(4)}</span>`;
+        loadPOIs();
+    }, () => alert("Unable to get location"), { enableHighAccuracy: true });
+}
+
+function enablePinMode() {
+    isPinMode = true;
+    document.getElementById('pin-btn').classList.add('!bg-emerald-600', '!text-white', '!border-transparent');
+}
+
+function setPinnedPosition(latlng) {
+    userLatLng = latlng;
+    if (userMarker) userMarker.remove();
+    userMarker = L.marker(userLatLng, {
+        icon: L.divIcon({
+            html: `<div style="background:#10b981;width:32px;height:32px;border-radius:9999px;border:5px solid white;box-shadow:0 0 0 6px rgba(16,185,129,0.3);color:white;font-size:20px;display:flex;align-items:center;justify-content:center;">📍</div>`,
+            iconSize: [32, 32]
+        })
+    }).addTo(map).bindPopup("Pinned position").openPopup();
+    
+    document.getElementById('location-status').classList.remove('hidden');
+    document.getElementById('current-location-text').innerHTML = `📌 Pinned location<br><span class="text-xs">${userLatLng.lat.toFixed(4)}, ${userLatLng.lng.toFixed(4)}</span>`;
+    disablePinMode();
+    loadPOIs();
+}
+
+function disablePinMode() {
+    isPinMode = false;
+    document.getElementById('pin-btn').classList.remove('!bg-emerald-600', '!text-white', '!border-transparent');
+}
+
+// ==================== LIVE WALKING ====================
+function toggleLiveWalking() {
+    if (isLiveWalking) stopLiveWalking();
+    else startLiveWalking();
+}
+
+function startLiveWalking() {
+    if (!navigator.geolocation) return alert("Geolocation not supported");
+    isLiveWalking = true;
+    const btn = document.getElementById('live-btn');
+    btn.innerHTML = `⏹️ Stop Live Walking`;
+    btn.classList.add('bg-red-500', 'hover:bg-red-600');
+    
+    document.getElementById('location-status').classList.remove('hidden');
+    document.getElementById('current-location-text').innerHTML = '🚶 Live GPS active';
+    
+    watchId = navigator.geolocation.watchPosition(pos => {
+        userLatLng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+        if (userMarker) userMarker.remove();
+        userMarker = L.marker(userLatLng, {
+            icon: L.divIcon({
+                html: `<div style="background:#10b981;width:34px;height:34px;border-radius:9999px;border:5px solid white;box-shadow:0 0 0 6px rgba(16,185,129,0.4);color:white;font-size:22px;display:flex;align-items:center;justify-content:center;animation:pulse 1.8s infinite;">🚶</div>`,
+                iconSize: [34, 34]
+            })
+        }).addTo(map).bindPopup("You are here (Live)").openPopup();
+        
+        map.flyTo(userLatLng, map.getZoom(), { animate: true, duration: 1.2 });
+        loadPOIs();
+        if (lastDestination) checkIfOffRoute();
+    }, () => {}, { enableHighAccuracy: true, maximumAge: 3000 });
+    
+    offRouteCheckInterval = setInterval(() => {
+        if (lastDestination && isLiveWalking) checkIfOffRoute();
+    }, 7000);
+}
+
+function stopLiveWalking() {
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    if (offRouteCheckInterval) clearInterval(offRouteCheckInterval);
+    isLiveWalking = false;
+    document.getElementById('live-btn').innerHTML = `🚶 Start Live Walking Mode`;
+    document.getElementById('live-btn').classList.remove('bg-red-500', 'hover:bg-red-600');
+    dismissOffRouteAlert();
+}
+
+function checkIfOffRoute() {
+    if (!userLatLng || !lastDestination) return;
+    const dist = haversineDistance(userLatLng.lat, userLatLng.lng, lastDestination.lat, lastDestination.lon);
+    if (dist > 0.18) {
+        document.getElementById('offroute-alert').classList.remove('hidden');
+    }
+}
+
+function recalculateCurrentRoute() {
+    dismissOffRouteAlert();
+    if (lastDestination) showRouteToPOI(lastDestination.lat, lastDestination.lon, lastDestination.name);
+}
+
+function dismissOffRouteAlert() {
+    document.getElementById('offroute-alert').classList.add('hidden');
+}
+
+// ==================== ROUTE ====================
+function showRouteToPOI(destLat, destLon, name) {
+    if (!userLatLng) {
+        alert("Please set your position first using GPS or Pin mode!");
+        return;
+    }
+    lastDestination = { lat: destLat, lon: destLon, name: name };
+    clearRoute();
+    
+    currentRouteControl = L.Routing.control({
+        waypoints: [userLatLng, L.latLng(destLat, destLon)],
+        router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'foot'
+        }),
+        lineOptions: { styles: [{ color: '#10b981', weight: 6 }] },
+        fitSelectedRoutes: true
+    }).addTo(map);
+    
+    currentRouteControl.on('routesfound', e => {
+        const route = e.routes[0];
+        const time = Math.round(route.summary.totalTime / 60);
+        const dist = (route.summary.totalDistance / 1000).toFixed(1);
+        
+        document.getElementById('route-summary').innerHTML = `
+            <div class="flex items-center gap-3 flex-1">
+                <span class="font-semibold text-3xl text-emerald-600">${time}</span>
+                <span class="text-gray-500">min walk</span>
+                <div class="h-5 w-px bg-gray-300 mx-3"></div>
+                <div class="font-medium">${dist} km to <strong>${name}</strong></div>
+            </div>
+            <div class="flex gap-2">
+                <a href="https://www.google.com/maps/dir/?api=1&origin=${userLatLng.lat},${userLatLng.lng}&destination=${destLat},${destLon}&travelmode=walking"
+                   target="_blank"
+                   class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-3xl flex items-center gap-2 transition-all active:scale-95">
+                    🗺️ Walking Route in Google Maps
+                </a>
+            </div>
+            <button onclick="clearRoute()" class="ml-2 px-5 py-3 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-3xl">Clear</button>
+        `;
+        document.getElementById('route-summary').classList.remove('hidden');
+    });
+}
+
+function clearRoute() {
+    if (currentRouteControl) map.removeControl(currentRouteControl);
+    currentRouteControl = null;
+    document.getElementById('route-summary').classList.add('hidden');
+}
+
+// ==================== POI & MARKERS ====================
+function setFeatureType(type) {
+    currentFeatureType = type;
+    document.querySelectorAll('.feature-btn').forEach(btn => {
+        const isActive = btn.getAttribute('onclick').includes(`'${type}'`);
+        btn.dataset.active = isActive ? 'true' : 'false';
+    });
+    loadPOIs();
+}
+
+function loadPOIs() {
+    const container = document.getElementById('results-list');
+    container.innerHTML = `<div class="flex justify-center py-12"><div class="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full"></div></div>`;
+    
+    let filtered = allPOIs
+        .filter(p => p.type === currentFeatureType)
+        .map(p => {
+            if (!userLatLng) return p;
+            const dist = haversineDistance(userLatLng.lat, userLatLng.lng, p.lat, p.lon);
+            const time = calculateWalkingTime(dist);
+            return { ...p, distanceKm: dist, timeMin: time };
+        })
+        .filter(p => !userLatLng || p.timeMin <= 15)
+        .sort((a, b) => (a.timeMin || 0) - (b.timeMin || 0));
+    
+    document.getElementById('results-count').textContent = `(${filtered.length} found)`;
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-gray-400"><p class="text-4xl mb-3">😕</p><p>No ${currentFeatureType} within 15 min walk</p></div>`;
+        clearMarkers();
+        return;
+    }
+    
+    let html = '';
+    filtered.forEach((poi, index) => {
+        const emoji = { clinic: '🏥', hospital: '🏨', pharmacy: '💊', market: '🛒', park: '🌳' }[poi.type];
+        html += `
+            <div class="result-item bg-white border border-gray-100 hover:border-emerald-300 rounded-3xl p-5 cursor-pointer transition-all hover:shadow-md"
+                 style="animation-delay: ${index * 60}ms"
+                 onclick="showRouteToPOI(${poi.lat}, ${poi.lon}, '${poi.name.replace(/'/g, "\\'")}')">
+                <div class="flex gap-4">
+                    <div class="text-4xl flex-shrink-0">${emoji}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-gray-800">${poi.name}</div>
+                        <div class="text-xs text-gray-500 mt-1 line-clamp-2">${poi.address}</div>
+                        ${poi.timeMin ? `
+                        <div class="mt-3 text-sm inline-flex items-center gap-2">
+                            <span class="text-emerald-600 font-medium">${poi.timeMin} min walk</span>
+                            <span class="text-gray-400">•</span>
+                            <span>${poi.distanceKm.toFixed(1)} km</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
+    });
+    container.innerHTML = html;
+    
+    clearMarkers();
+    filtered.forEach(poi => {
+        const marker = L.marker([poi.lat, poi.lon]).addTo(map)
+            .bindPopup(`<b>${poi.name}</b><br><small>${poi.address}</small><br><br>
+                        <button onclick="showRouteToPOI(${poi.lat}, ${poi.lon}, '${poi.name.replace(/'/g, "\\'")}'); this.closest('.leaflet-popup').remove();"
+                                class="mt-2 text-xs bg-emerald-600 text-white px-4 py-1.5 rounded-3xl w-full">Show Route</button>`);
+        poiMarkers.push(marker);
+    });
+}
+
+function clearMarkers() {
+    poiMarkers.forEach(m => m.remove());
+    poiMarkers = [];
+}
+
+function clearLocation() {
+    if (userMarker) userMarker.remove();
+    userMarker = userLatLng = null;
+    document.getElementById('location-status').classList.add('hidden');
+    clearRoute();
+    loadPOIs();
+}
+
+function toggleMap() {
+    const panel = document.getElementById('panel');
+    const mapContainer = document.getElementById('map-container');
+    isMapExpanded = !isMapExpanded;
+    if (isMapExpanded) {
+        panel.style.height = '28vh';
+        mapContainer.style.height = '72vh';
+    } else {
+        panel.style.height = '58vh';
+        mapContainer.style.height = '42vh';
+    }
+    setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+}
+
+// ==================== INIT ====================
+window.onload = () => {
+    initMap();
+    map.on('click', e => { if (isPinMode) setPinnedPosition(e.latlng); });
+    
+    setFeatureType('hospital');
+    
+    window.addEventListener('resize', () => {
+        if (map) setTimeout(() => map.invalidateSize(), 150);
+    });
+    
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+    }
+};
+</script>
+</body>
+</html>
