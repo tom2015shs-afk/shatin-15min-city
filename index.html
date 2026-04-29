@@ -52,7 +52,7 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         </button>
 
         <button onclick="toggleLiveWalking()" id="live-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
-            🚶 Start Live Driving Mode
+            🚗 Start Live Driving Mode
         </button>
 
         <!-- Categories -->
@@ -297,7 +297,7 @@ function startLiveWalking() {
     if (!navigator.geolocation) return alert("Geolocation not supported");
     isLiveWalking = true;
     const btn = document.getElementById('live-btn');
-    btn.innerHTML = `⏹️ Stop Live Walking`;
+    btn.innerHTML = `⏹️ Stop Live Driving`;
     btn.classList.add('bg-red-500', 'hover:bg-red-600');
     
     document.getElementById('location-status').classList.remove('hidden');
@@ -376,7 +376,7 @@ function showRouteToPOI(destLat, destLon, name) {
         document.getElementById('route-summary').innerHTML = `
             <div class="flex items-center gap-3 flex-1">
                 <span class="font-semibold text-3xl text-emerald-600">${time}</span>
-                <span class="text-gray-500">min walk</span>
+                <span class="text-gray-500">min drive</span>
                 <div class="h-5 w-px bg-gray-300 mx-3"></div>
                 <div class="font-medium">${dist} km to <strong>${name}</strong></div>
             </div>
@@ -446,7 +446,7 @@ function loadPOIs() {
                         <div class="text-xs text-gray-500 mt-1 line-clamp-2">${poi.address}</div>
                         ${poi.timeMin ? `
                         <div class="mt-3 text-sm inline-flex items-center gap-2">
-                            <span class="text-emerald-600 font-medium">${poi.timeMin} min walk</span>
+                            <span class="text-emerald-600 font-medium">${poi.timeMin} min drive</span>
                             <span class="text-gray-400">•</span>
                             <span>${poi.distanceKm.toFixed(1)} km</span>
                         </div>` : ''}
