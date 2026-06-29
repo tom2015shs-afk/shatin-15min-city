@@ -27,7 +27,6 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 .feature-btn span:last-child {
     font-size: 14px !important;
     font-weight: 700 !important;
-    letter-spacing: -0.2px;
     color: #ffffff !important;
 }
 
@@ -72,7 +71,7 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
 <div id="app-container">
-    <!-- Side Panel -->
+    <!-- Left / Top Panel -->
     <div id="side-panel">
         <div class="geo-header px-6 py-6 text-white">
             <div class="flex items-center gap-4">
@@ -256,14 +255,14 @@ function calculateWalkingTime(distanceKm) {
     return Math.round((distanceKm / 4.8) * 60);
 }
 
-// ==================== MAP LAYERS ====================
+// ==================== MAP LAYERS (No Token) ====================
 function initMapLayers() {
     baseLayers = {
         "Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }),
         "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
         "Terrain": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' }),
-        "OSM Hot": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
-        "3D Terrain": L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap 3D Terrain' })
+        "3D Terrain": L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap 3D Terrain' }),
+        "OSM Hot": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
     };
 }
 function createLayerButtons() {
