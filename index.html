@@ -12,8 +12,20 @@
 body { font-family: 'Inter', system_ui, sans-serif; }
 #map { height: 100%; width: 100%; }
 .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-.result-item { opacity: 0; transform: translateY(20px); animation: rollDown 0.4s forwards; }
-@keyframes rollDown { to { opacity: 1; transform: translateY(0); } }
+
+/* Left-Right Rolling Animation */
+.result-item { 
+    opacity: 0; 
+    transform: translateX(-40px); 
+    animation: rollInLeft 0.5s forwards; 
+}
+@keyframes rollInLeft { 
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    } 
+}
+
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 20px; }
 #panel { transition: height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); }
@@ -69,13 +81,12 @@ body { font-family: 'Inter', system_ui, sans-serif; }
                 </button>
             </div>
         </div>
-        
+       
         <!-- Map Layers -->
         <div>
             <label class="block text-sm font-medium text-gray-500 mb-2">🗺️ Map Layers</label>
             <div class="flex flex-wrap gap-2" id="layer-controls"></div>
         </div>
-
         <div class="flex justify-end">
             <button onclick="loadPOIs()" class="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-1 hover:underline">Refresh ↻</button>
         </div>
@@ -98,18 +109,16 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         </div>
     </div>
 </div>
-
 <div onclick="toggleMap()" class="drag-handle bg-white dark:bg-gray-800 border-t border-b flex justify-center py-3 cursor-pointer">
     <div class="w-14 h-1.5 bg-gray-400 rounded-full"></div>
 </div>
-
 <div id="map-container" class="flex-1 relative bg-gray-100 dark:bg-gray-900" style="height: 42vh;">
     <div id="map"></div>
-  
+ 
     <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block">
         <strong>Live Mode:</strong> Walk naturally.<br>If you go wrong, the app will help reroute.
     </div>
-  
+ 
     <div id="offroute-alert" class="hidden absolute top-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 z-[1000]">
         <span class="text-2xl">⚠️</span>
         <div class="flex-1">
@@ -119,10 +128,9 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         <button onclick="recalculateCurrentRoute()" class="bg-white text-orange-600 px-6 py-2.5 rounded-3xl font-medium hover:bg-orange-100">Recalculate</button>
         <button onclick="dismissOffRouteAlert()" class="text-2xl leading-none hover:text-orange-200">×</button>
     </div>
-  
+ 
     <div id="route-summary" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 text-sm z-[1000]"></div>
 </div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.js"></script>
 <script>
@@ -139,7 +147,7 @@ let currentBaseLayer = null;
 let baseLayers = {};
 
 // ==================== ALL POIs ====================
-let allPOIs = [ /* ... your existing POIs array (unchanged) ... */ 
+let allPOIs = [
     { id: 1, name: "Sha Tin Student Health Service Centre", type: "clinic", lat: 22.37752063, lon: 114.1841083, address: "1/F Sha Tin (Tai Wai) Clinic, 2 Man Lai Road, Tai Wai" },
     { id: 2, name: "Yuen Chau Kok Chest Clinic", type: "clinic", lat: 22.38247667, lon: 114.2015095, address: "29 Chap Wai Kon Street, Sha Tin" },
     { id: 3, name: "Pamela Youde Child Assessment Centre (Shatin)", type: "clinic", lat: 22.3817632, lon: 114.2018784, address: "2/F, 31-33 Chap Wai Kon Street, Sha Tin" },
@@ -203,7 +211,6 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
 function calculateWalkingTime(distanceKm) {
     return Math.round((distanceKm / 4.8) * 60);
 }
@@ -211,24 +218,13 @@ function calculateWalkingTime(distanceKm) {
 // ==================== MAP LAYERS ====================
 function initMapLayers() {
     baseLayers = {
-        "Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }),
-        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles © Esri'
-        }),
-        "Terrain": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenTopoMap'
-        }),
-        "OSM Hot": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }),
-        "Stamen Terrain": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png', {
-            attribution: 'Map tiles by Stamen Design'
-        })
+        "Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }),
+        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+        "Terrain": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' }),
+        "OSM Hot": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
+        "Stamen Terrain": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png', { attribution: 'Map tiles by Stamen Design' })
     };
 }
-
 function createLayerButtons() {
     const container = document.getElementById('layer-controls');
     container.innerHTML = '';
@@ -258,7 +254,7 @@ function initMap() {
     currentBaseLayer.addTo(map);
 }
 
-// ==================== REST OF THE CODE (unchanged logic) ====================
+// ==================== CORE FUNCTIONS ====================
 function findNearestNow() {
     if (!userLatLng) return alert("Please set your location first using GPS or Pin mode!");
     let filtered = allPOIs.filter(p => p.type === currentFeatureType);
