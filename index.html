@@ -71,7 +71,6 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
 <div id="app-container">
-    <!-- Left / Top Panel -->
     <div id="side-panel">
         <div class="geo-header px-6 py-6 text-white">
             <div class="flex items-center gap-4">
@@ -153,7 +152,6 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         </div>
     </div>
 
-    <!-- Map -->
     <div id="map-container">
         <div id="map"></div>
         <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block z-10">
@@ -255,7 +253,7 @@ function calculateWalkingTime(distanceKm) {
     return Math.round((distanceKm / 4.8) * 60);
 }
 
-// ==================== MAP LAYERS (No Token) ====================
+// ==================== MAP LAYERS ====================
 function initMapLayers() {
     baseLayers = {
         "Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }),
@@ -286,7 +284,6 @@ function createLayerButtons() {
     });
 }
 
-// ==================== MAP INIT ====================
 function initMap() {
     map = L.map('map', { zoomControl: true }).setView([22.387, 114.195], 14.8);
     initMapLayers();
@@ -294,7 +291,49 @@ function initMap() {
     currentBaseLayer.addTo(map);
 }
 
-// ==================== CORE FUNCTIONS ====================
+// ==================== ROUTING - FIXED TO WALKING ====================
+function showRouteToPOI(destLat, destLon, name) {
+    if (!userLatLng) return alert("Please set your position first!");
+    lastDestination = { lat: destLat, lon: destLon, name: name };
+    clearRoute();
+
+    currentRouteControl = L.Routing.control({
+        waypoints: [userLatLng, L.latLng(destLat, destLon)],
+        router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'foot',   // ← Walking mode
+            timeout: 30000
+        }),
+        lineOptions: { styles: [{ color: '#10b981', weight: 6 }] },
+        fitSelectedRoutes: true
+    }).addTo(map);
+
+    currentRouteControl.on('routesfound', e => {
+        const route = e.routes[0];
+        const time = Math.round(route.summary.totalTime / 60);
+        const dist = (route.summary.totalDistance / 1000).toFixed(1);
+        document.getElementById('route-summary').innerHTML = `
+            <div class="flex items-center gap-3 flex-1">
+                <span class="font-semibold text-3xl text-emerald-600">${time}</span>
+                <span class="text-gray-500">min walk</span>
+                <div class="h-5 w-px bg-gray-300 mx-3"></div>
+                <div class="font-medium">${dist} km to <strong>${name}</strong></div>
+            </div>
+            <div class="flex gap-2">
+                <a href="https://www.google.com/maps/dir/?api=1&origin=${userLatLng.lat},${userLatLng.lng}&destination=${destLat},${destLon}&travelmode=walking" target="_blank" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-3xl flex items-center gap-2">🗺️ Google Maps</a>
+            </div>
+            <button onclick="clearRoute()" class="ml-2 px-5 py-3 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-3xl">Clear</button>`;
+        document.getElementById('route-summary').classList.remove('hidden');
+    });
+}
+
+function clearRoute() {
+    if (currentRouteControl) map.removeControl(currentRouteControl);
+    currentRouteControl = null;
+    document.getElementById('route-summary').classList.add('hidden');
+}
+
+// ==================== Other Functions (same) ====================
 function findNearestNow() {
     if (!userLatLng) return alert("Please set your location first using GPS or Pin mode!");
     let filtered = allPOIs.filter(p => p.type === currentFeatureType);
@@ -387,41 +426,6 @@ function recalculateCurrentRoute() {
 
 function dismissOffRouteAlert() {
     document.getElementById('offroute-alert').classList.add('hidden');
-}
-
-function showRouteToPOI(destLat, destLon, name) {
-    if (!userLatLng) return alert("Please set your position first!");
-    lastDestination = { lat: destLat, lon: destLon, name: name };
-    clearRoute();
-    currentRouteControl = L.Routing.control({
-        waypoints: [userLatLng, L.latLng(destLat, destLon)],
-        router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1', profile: 'foot' }),
-        lineOptions: { styles: [{ color: '#10b981', weight: 6 }] },
-        fitSelectedRoutes: true
-    }).addTo(map);
-    currentRouteControl.on('routesfound', e => {
-        const route = e.routes[0];
-        const time = Math.round(route.summary.totalTime / 60);
-        const dist = (route.summary.totalDistance / 1000).toFixed(1);
-        document.getElementById('route-summary').innerHTML = `
-            <div class="flex items-center gap-3 flex-1">
-                <span class="font-semibold text-3xl text-emerald-600">${time}</span>
-                <span class="text-gray-500">min walk</span>
-                <div class="h-5 w-px bg-gray-300 mx-3"></div>
-                <div class="font-medium">${dist} km to <strong>${name}</strong></div>
-            </div>
-            <div class="flex gap-2">
-                <a href="https://www.google.com/maps/dir/?api=1&origin=${userLatLng.lat},${userLatLng.lng}&destination=${destLat},${destLon}&travelmode=walking" target="_blank" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-3xl flex items-center gap-2">🗺️ Google Maps</a>
-            </div>
-            <button onclick="clearRoute()" class="ml-2 px-5 py-3 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-3xl">Clear</button>`;
-        document.getElementById('route-summary').classList.remove('hidden');
-    });
-}
-
-function clearRoute() {
-    if (currentRouteControl) map.removeControl(currentRouteControl);
-    currentRouteControl = null;
-    document.getElementById('route-summary').classList.add('hidden');
 }
 
 function setFeatureType(type) {
