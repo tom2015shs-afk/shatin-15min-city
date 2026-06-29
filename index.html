@@ -20,117 +20,149 @@ body { font-family: 'Inter', system_ui, sans-serif; }
     animation: rollInLeft 0.5s forwards; 
 }
 @keyframes rollInLeft { 
-    to { 
-        opacity: 1; 
-        transform: translateX(0); 
-    } 
+    to { opacity: 1; transform: translateX(0); } 
 }
 
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 20px; }
-#panel { transition: height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); }
-.drag-handle { transition: background-color 0.2s ease; }
-.drag-handle:active { background-color: #e5e7eb; }
 .geo-header { background: linear-gradient(135deg, #10b981, #059669); }
+
+/* Horizontal Layout */
+#app-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+#side-panel {
+    width: 400px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e5e7eb;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.08);
+    z-index: 10;
+}
+#map-container {
+    flex: 1;
+    position: relative;
+    background: #f3f4f6;
+}
+.dark #side-panel { 
+    background: #1f2937; 
+    border-right-color: #374151; 
+}
+.dark #map-container { 
+    background: #111827; 
+}
 </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col h-screen overflow-hidden">
-<div id="panel" class="bg-white dark:bg-gray-800 shadow-2xl flex flex-col border-b border-gray-200 dark:border-gray-700 overflow-hidden" style="height: 58vh;">
-    <div class="geo-header px-6 py-6 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-11 h-11 bg-white text-emerald-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner">🌍</div>
-            <div>
-                <h1 class="text-3xl font-bold tracking-tighter">GeoExplorer</h1>
-                <p class="text-emerald-100 text-xl -mt-1">15-minutes City</p>
-            </div>
-        </div>
-        <p class="mt-2 text-emerald-100 text-sm font-medium">Walkable. Liveable. Sha Tin.</p>
-    </div>
-    <div class="p-6 space-y-6 flex-1 overflow-auto">
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="locateUser()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
-                📍 Use GPS
-            </button>
-            <button onclick="enablePinMode()" id="pin-btn" class="bg-white dark:bg-gray-700 border-2 border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-gray-600 font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
-                📌 Pin on Map
-            </button>
-        </div>
-        <button onclick="findNearestNow()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-5 px-6 rounded-3xl flex items-center justify-center gap-3 text-lg shadow-lg active:scale-95 transition-all">
-            ⭐ Nearest Now
-        </button>
-        <button onclick="toggleLiveWalking()" id="live-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
-            🚶 Start Live Walking Mode
-        </button>
-        <div>
-            <label class="block text-sm font-medium text-gray-500 mb-2">What are you looking for?</label>
-            <div class="grid grid-cols-5 gap-3">
-                <button onclick="setFeatureType('clinic')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                    <span class="text-3xl">🏥</span><span class="text-xs font-medium mt-1">Clinic</span>
-                </button>
-                <button onclick="setFeatureType('pharmacy')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                    <span class="text-3xl">💊</span><span class="text-xs font-medium mt-1">Pharmacy</span>
-                </button>
-                <button onclick="setFeatureType('hospital')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                    <span class="text-3xl">🏨</span><span class="text-xs font-medium mt-1">Hospital</span>
-                </button>
-                <button onclick="setFeatureType('market')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                    <span class="text-3xl">🛒</span><span class="text-xs font-medium mt-1">Market</span>
-                </button>
-                <button onclick="setFeatureType('park')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                    <span class="text-3xl">🌳</span><span class="text-xs font-medium mt-1">Park</span>
-                </button>
-            </div>
-        </div>
-       
-        <!-- Map Layers -->
-        <div>
-            <label class="block text-sm font-medium text-gray-500 mb-2">🗺️ Map Layers</label>
-            <div class="flex flex-wrap gap-2" id="layer-controls"></div>
-        </div>
-        <div class="flex justify-end">
-            <button onclick="loadPOIs()" class="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-1 hover:underline">Refresh ↻</button>
-        </div>
-        <div id="location-status" class="text-sm bg-gray-50 dark:bg-gray-700 rounded-3xl p-4 hidden">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span id="current-location-text" class="font-medium text-gray-700 dark:text-gray-300"></span>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
+
+<div id="app-container">
+    <!-- Left Control Panel -->
+    <div id="side-panel">
+        <div class="geo-header px-6 py-6 text-white">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 bg-white text-emerald-600 rounded-3xl flex items-center justify-center text-3xl shadow-inner">🌍</div>
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tighter">GeoExplorer</h1>
+                    <p class="text-emerald-100 text-xl -mt-1">15-minutes City</p>
                 </div>
-                <button onclick="clearLocation()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+            </div>
+            <p class="mt-2 text-emerald-100 text-sm font-medium">Walkable. Liveable. Sha Tin.</p>
+        </div>
+
+        <div class="p-6 space-y-6 flex-1 overflow-auto custom-scroll">
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="locateUser()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+                    📍 Use GPS
+                </button>
+                <button onclick="enablePinMode()" id="pin-btn" class="bg-white dark:bg-gray-700 border-2 border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-gray-600 font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+                    📌 Pin on Map
+                </button>
+            </div>
+
+            <button onclick="findNearestNow()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-5 px-6 rounded-3xl flex items-center justify-center gap-3 text-lg shadow-lg active:scale-95 transition-all">
+                ⭐ Nearest Now
+            </button>
+
+            <button onclick="toggleLiveWalking()" id="live-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-4 px-6 rounded-3xl flex items-center justify-center gap-2 transition-all active:scale-95">
+                🚶 Start Live Walking Mode
+            </button>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-2">What are you looking for?</label>
+                <div class="grid grid-cols-5 gap-3">
+                    <button onclick="setFeatureType('clinic')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                        <span class="text-3xl">🏥</span><span class="text-xs font-medium mt-1">Clinic</span>
+                    </button>
+                    <button onclick="setFeatureType('pharmacy')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                        <span class="text-3xl">💊</span><span class="text-xs font-medium mt-1">Pharmacy</span>
+                    </button>
+                    <button onclick="setFeatureType('hospital')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                        <span class="text-3xl">🏨</span><span class="text-xs font-medium mt-1">Hospital</span>
+                    </button>
+                    <button onclick="setFeatureType('market')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                        <span class="text-3xl">🛒</span><span class="text-xs font-medium mt-1">Market</span>
+                    </button>
+                    <button onclick="setFeatureType('park')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
+                        <span class="text-3xl">🌳</span><span class="text-xs font-medium mt-1">Park</span>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-2">🗺️ Map Layers</label>
+                <div class="flex flex-wrap gap-2" id="layer-controls"></div>
+            </div>
+
+            <div class="flex justify-end">
+                <button onclick="loadPOIs()" class="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-1 hover:underline">Refresh ↻</button>
+            </div>
+
+            <div id="location-status" class="text-sm bg-gray-50 dark:bg-gray-700 rounded-3xl p-4 hidden">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div id="status-dot" class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        <span id="current-location-text" class="font-medium text-gray-700 dark:text-gray-300"></span>
+                    </div>
+                    <button onclick="clearLocation()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col min-h-0">
+                <div class="flex justify-between items-baseline mb-3">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Nearby Features
+                        <span id="results-count" class="text-emerald-600 text-sm font-normal"></span>
+                    </h2>
+                </div>
+                <div id="results-list" class="flex-1 overflow-auto space-y-3 pr-2 custom-scroll"></div>
             </div>
         </div>
-        <div class="flex-1 flex flex-col min-h-0">
-            <div class="flex justify-between items-baseline mb-3">
-                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Nearby Features
-                    <span id="results-count" class="text-emerald-600 text-sm font-normal"></span>
-                </h2>
+    </div>
+
+    <!-- Right Map -->
+    <div id="map-container">
+        <div id="map"></div>
+
+        <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block z-10">
+            <strong>Live Mode:</strong> Walk naturally.<br>If you go wrong, the app will help reroute.
+        </div>
+
+        <div id="offroute-alert" class="hidden absolute top-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 z-[1000]">
+            <span class="text-2xl">⚠️</span>
+            <div class="flex-1">
+                <div class="font-semibold">You're off the route!</div>
+                <div class="text-sm opacity-90">Do you want a new path from here?</div>
             </div>
-            <div id="results-list" class="flex-1 overflow-auto space-y-3 pr-2 custom-scroll"></div>
+            <button onclick="recalculateCurrentRoute()" class="bg-white text-orange-600 px-6 py-2.5 rounded-3xl font-medium hover:bg-orange-100">Recalculate</button>
+            <button onclick="dismissOffRouteAlert()" class="text-2xl leading-none hover:text-orange-200">×</button>
         </div>
+
+        <div id="route-summary" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 text-sm z-[1000]"></div>
     </div>
 </div>
-<div onclick="toggleMap()" class="drag-handle bg-white dark:bg-gray-800 border-t border-b flex justify-center py-3 cursor-pointer">
-    <div class="w-14 h-1.5 bg-gray-400 rounded-full"></div>
-</div>
-<div id="map-container" class="flex-1 relative bg-gray-100 dark:bg-gray-900" style="height: 42vh;">
-    <div id="map"></div>
- 
-    <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block">
-        <strong>Live Mode:</strong> Walk naturally.<br>If you go wrong, the app will help reroute.
-    </div>
- 
-    <div id="offroute-alert" class="hidden absolute top-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 z-[1000]">
-        <span class="text-2xl">⚠️</span>
-        <div class="flex-1">
-            <div class="font-semibold">You're off the route!</div>
-            <div class="text-sm opacity-90">Do you want a new path from here?</div>
-        </div>
-        <button onclick="recalculateCurrentRoute()" class="bg-white text-orange-600 px-6 py-2.5 rounded-3xl font-medium hover:bg-orange-100">Recalculate</button>
-        <button onclick="dismissOffRouteAlert()" class="text-2xl leading-none hover:text-orange-200">×</button>
-    </div>
- 
-    <div id="route-summary" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 text-sm z-[1000]"></div>
-</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.js"></script>
 <script>
@@ -142,7 +174,6 @@ let watchId = null;
 let isLiveWalking = false;
 let lastDestination = null;
 let offRouteCheckInterval = null;
-let isMapExpanded = false;
 let currentBaseLayer = null;
 let baseLayers = {};
 
@@ -446,27 +477,12 @@ function clearLocation() {
     loadPOIs();
 }
 
-function toggleMap() {
-    const panel = document.getElementById('panel');
-    const mapContainer = document.getElementById('map-container');
-    isMapExpanded = !isMapExpanded;
-    if (isMapExpanded) {
-        panel.style.height = '28vh';
-        mapContainer.style.height = '72vh';
-    } else {
-        panel.style.height = '58vh';
-        mapContainer.style.height = '42vh';
-    }
-    setTimeout(() => { if (map) map.invalidateSize(); }, 350);
-}
-
 // ==================== INIT ====================
 window.onload = () => {
     initMap();
     createLayerButtons();
     map.on('click', e => { if (isPinMode) setPinnedPosition(e.latlng); });
     setFeatureType('hospital');
-    window.addEventListener('resize', () => { if (map) setTimeout(() => map.invalidateSize(), 150); });
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
 };
 </script>
