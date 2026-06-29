@@ -27,39 +27,47 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 20px; }
 .geo-header { background: linear-gradient(135deg, #10b981, #059669); }
 
-/* Horizontal Layout */
+/* Responsive Layout */
 #app-container {
     display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
 }
 #side-panel {
-    width: 400px;
     background: white;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #e5e7eb;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.08);
-    z-index: 10;
+    border-bottom: 1px solid #e5e7eb;
+    max-height: 58vh;
 }
 #map-container {
     flex: 1;
     position: relative;
     background: #f3f4f6;
 }
-.dark #side-panel { 
-    background: #1f2937; 
-    border-right-color: #374151; 
+
+/* Desktop & Tablet - Horizontal Layout */
+@media (min-width: 768px) {
+    #app-container {
+        flex-direction: row;
+    }
+    #side-panel {
+        width: 400px;
+        max-height: none;
+        border-bottom: none;
+        border-right: 1px solid #e5e7eb;
+    }
 }
-.dark #map-container { 
-    background: #111827; 
-}
+
+.dark #side-panel { background: #1f2937; border-color: #374151; }
+.dark #map-container { background: #111827; }
 </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
 <div id="app-container">
-    <!-- Left Control Panel -->
+    <!-- Panel (Top on mobile, Left on desktop) -->
     <div id="side-panel">
         <div class="geo-header px-6 py-6 text-white">
             <div class="flex items-center gap-4">
@@ -141,7 +149,7 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         </div>
     </div>
 
-    <!-- Right Map -->
+    <!-- Map Area -->
     <div id="map-container">
         <div id="map"></div>
 
@@ -285,7 +293,7 @@ function initMap() {
     currentBaseLayer.addTo(map);
 }
 
-// ==================== CORE FUNCTIONS ====================
+// ==================== CORE FUNCTIONS (same as before) ====================
 function findNearestNow() {
     if (!userLatLng) return alert("Please set your location first using GPS or Pin mode!");
     let filtered = allPOIs.filter(p => p.type === currentFeatureType);
