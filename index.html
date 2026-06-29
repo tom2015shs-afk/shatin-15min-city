@@ -13,7 +13,7 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 #map { height: 100%; width: 100%; }
 .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
 
-/* Left-Right Rolling Animation */
+/* Animation */
 .result-item { 
     opacity: 0; 
     transform: translateX(-40px); 
@@ -22,6 +22,15 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 @keyframes rollInLeft { 
     to { opacity: 1; transform: translateX(0); } 
 }
+
+/* Clearer Category Text */
+.feature-btn span:last-child {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.2px;
+    color: #1f2937;
+}
+.dark .feature-btn span:last-child { color: #e5e7eb; }
 
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 20px; }
@@ -47,11 +56,8 @@ body { font-family: 'Inter', system_ui, sans-serif; }
     background: #f3f4f6;
 }
 
-/* Desktop & Tablet - Horizontal Layout */
 @media (min-width: 768px) {
-    #app-container {
-        flex-direction: row;
-    }
+    #app-container { flex-direction: row; }
     #side-panel {
         width: 400px;
         max-height: none;
@@ -67,7 +73,7 @@ body { font-family: 'Inter', system_ui, sans-serif; }
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
 
 <div id="app-container">
-    <!-- Panel (Top on mobile, Left on desktop) -->
+    <!-- Panel -->
     <div id="side-panel">
         <div class="geo-header px-6 py-6 text-white">
             <div class="flex items-center gap-4">
@@ -102,19 +108,19 @@ body { font-family: 'Inter', system_ui, sans-serif; }
                 <label class="block text-sm font-medium text-gray-500 mb-2">What are you looking for?</label>
                 <div class="grid grid-cols-5 gap-3">
                     <button onclick="setFeatureType('clinic')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                        <span class="text-3xl">🏥</span><span class="text-xs font-medium mt-1">Clinic</span>
+                        <span class="text-3xl">🏥</span><span class="text-xs">Clinic</span>
                     </button>
                     <button onclick="setFeatureType('pharmacy')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                        <span class="text-3xl">💊</span><span class="text-xs font-medium mt-1">Pharmacy</span>
+                        <span class="text-3xl">💊</span><span class="text-xs">Pharmacy</span>
                     </button>
                     <button onclick="setFeatureType('hospital')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                        <span class="text-3xl">🏨</span><span class="text-xs font-medium mt-1">Hospital</span>
+                        <span class="text-3xl">🏨</span><span class="text-xs">Hospital</span>
                     </button>
                     <button onclick="setFeatureType('market')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                        <span class="text-3xl">🛒</span><span class="text-xs font-medium mt-1">Market</span>
+                        <span class="text-3xl">🛒</span><span class="text-xs">Market</span>
                     </button>
                     <button onclick="setFeatureType('park')" class="feature-btn flex flex-col items-center py-3 px-2 rounded-3xl border-2 border-transparent hover:border-emerald-200 active:bg-emerald-50 transition-all data-[active=true]:border-emerald-600 data-[active=true]:bg-emerald-50">
-                        <span class="text-3xl">🌳</span><span class="text-xs font-medium mt-1">Park</span>
+                        <span class="text-3xl">🌳</span><span class="text-xs">Park</span>
                     </button>
                 </div>
             </div>
@@ -149,14 +155,12 @@ body { font-family: 'Inter', system_ui, sans-serif; }
         </div>
     </div>
 
-    <!-- Map Area -->
+    <!-- Map -->
     <div id="map-container">
         <div id="map"></div>
-
         <div id="map-instructions" class="absolute top-6 right-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-5 py-3 text-sm max-w-xs hidden md:block z-10">
             <strong>Live Mode:</strong> Walk naturally.<br>If you go wrong, the app will help reroute.
         </div>
-
         <div id="offroute-alert" class="hidden absolute top-6 left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 z-[1000]">
             <span class="text-2xl">⚠️</span>
             <div class="flex-1">
@@ -166,7 +170,6 @@ body { font-family: 'Inter', system_ui, sans-serif; }
             <button onclick="recalculateCurrentRoute()" class="bg-white text-orange-600 px-6 py-2.5 rounded-3xl font-medium hover:bg-orange-100">Recalculate</button>
             <button onclick="dismissOffRouteAlert()" class="text-2xl leading-none hover:text-orange-200">×</button>
         </div>
-
         <div id="route-summary" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl px-6 py-4 flex items-center gap-4 text-sm z-[1000]"></div>
     </div>
 </div>
@@ -285,7 +288,6 @@ function createLayerButtons() {
     });
 }
 
-// ==================== MAP INIT ====================
 function initMap() {
     map = L.map('map', { zoomControl: true }).setView([22.387, 114.195], 14.8);
     initMapLayers();
@@ -293,7 +295,7 @@ function initMap() {
     currentBaseLayer.addTo(map);
 }
 
-// ==================== CORE FUNCTIONS (same as before) ====================
+// ==================== CORE FUNCTIONS ====================
 function findNearestNow() {
     if (!userLatLng) return alert("Please set your location first using GPS or Pin mode!");
     let filtered = allPOIs.filter(p => p.type === currentFeatureType);
